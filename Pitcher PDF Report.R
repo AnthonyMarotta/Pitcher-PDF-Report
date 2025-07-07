@@ -6,8 +6,8 @@ library(gtable)
 library(grid)
 
 # Working Directory and CSV Data
-setwd("~/Downloads/UConnCSV/UConnSeason")
-data <- read.csv("UConn Season.csv")
+setwd("~/Downloads/UConnCSV/UConn Spring 2025")
+data <- read.csv("UConn 2025.csv")
 
 # Get list of all pitchers on UCO_HUS team
 pitchers <- data %>%
@@ -34,42 +34,43 @@ for (pitcher in pitchers) {
   name_split <- strsplit(pitcher, ", ")[[1]]
   formatted_name <- paste(name_split[2], name_split[1])
   
-  movement_chart <- ggplot(pitcher_data, aes(x = HorzBreak, y = InducedVertBreak, color = TaggedPitchType)) +
-    geom_point(size = 3, na.rm = TRUE) +
+  movement_chart <- ggplot(pitcher_data, aes(x = HorzBreak, y = InducedVertBreak, fill = TaggedPitchType)) +
+    geom_point(shape = 21, size = 3, stroke = 0.4, color = "black", alpha = 0.7, na.rm = TRUE) +
     labs(
-      x = "Horizontal Break (HB)", y = "Induced Vertical Break (IVB)", color = "Pitch Type",
+      x = "Horizontal Break (HB)", y = "Induced Vertical Break (IVB)", fill = "Pitch Type",
       title = "Pitch Movement Chart"
     ) +
-    xlim(-18, 18) + ylim(-30, 30) +  # Narrow the width to resemble PlateLocSide scale
+    xlim(-18, 18) + ylim(-30, 30) +
     geom_segment(aes(x = 0, y = -30, xend = 0, yend = 30), size = 1, color = "grey55") +
     geom_segment(aes(x = -18, y = 0, xend = 18, yend = 0), size = 1, color = "grey55") +
-    scale_color_manual(
+    scale_fill_manual(
       values = pitch_type_colors,
       guide = guide_legend(nrow = 2)
     ) +
-    coord_fixed(ratio = .5) +  # Adjust aspect ratio for shape consistency
+    coord_fixed(ratio = 0.5) +
     theme_bw() +
     theme(
       plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
       legend.position = "bottom",
+      legend.title = element_text(size = 10, face = "bold"), 
       legend.text = element_text(size = 10),
       axis.title = element_text(size = 10)
     )
   
   
-  release_chart <- ggplot(pitcher_data, aes(x = RelSide, y = RelHeight, color = TaggedPitchType)) +
-    geom_point(size = 3, na.rm = TRUE) +
+  release_chart <- ggplot(pitcher_data, aes(x = RelSide, y = RelHeight, fill = TaggedPitchType)) +
+    geom_point(shape = 21, size = 3, stroke = 0.4, color = "black", alpha = 0.7, na.rm = TRUE) +
     labs(
       x = "Horizontal Release Point",
       y = "Vertical Release Point",
-      color = "Pitch Type",
-      title = paste("Release Point Chart")
+      fill = "Pitch Type",
+      title = "Release Point Chart"
     ) +
     geom_segment(aes(x = 0, y = 0, xend = 0, yend = 10), size = 1, color = "grey55") +
     geom_segment(aes(x = -4, y = 0, xend = 4, yend = 0), size = 1, color = "grey55") +
     coord_cartesian(xlim = c(-4, 4), ylim = c(2, 7)) +
-    coord_fixed(ratio = 0.5) +  # Match movement chart dimensions
-    scale_color_manual(
+    coord_fixed(ratio = 0.5) +
+    scale_fill_manual(
       values = pitch_type_colors,
       guide = guide_legend(nrow = 2)
     ) +
@@ -77,12 +78,11 @@ for (pitcher in pitchers) {
     theme(
       plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
       legend.position = "bottom",
+      legend.title = element_text(size = 10, face = "bold"),  # bold legend title
       legend.text = element_text(size = 10),
       axis.title = element_text(size = 10),
       plot.margin = unit(c(1, 1, 1, 1), "cm")
     )
-  
-  
   
   # Pitch Location Map for BatterSide = "Left"
   pitch_location_map_left <- ggplot(
@@ -215,7 +215,8 @@ for (pitcher in pitchers) {
       InStrikeZone = PlateLocSide >= -1 & PlateLocSide <= 1 & PlateLocHeight >= 1.40 & PlateLocHeight <= 3.6,
       Swing = PitchCall %in% c("FoulBallNotFieldable", "FoulBallFieldable", "StrikeSwinging", "InPlay"),
       Chase = ifelse(!InStrikeZone & Swing, 1, 0),
-      ZSwing = ifelse(InStrikeZone & Swing, 1, 0)
+      ZSwing = ifelse(InStrikeZone & Swing, 1, 0),
+      HardHitCheck = ifelse(!is.na(ExitSpeed) & ExitSpeed >= 95 & ExitSpeed <= 120 & PitchCall == "InPlay", 1, 0)
     )
   
   total_pitches <- nrow(data_filtered)
@@ -236,13 +237,13 @@ for (pitcher in pitchers) {
       SO = sum(KorBB == "Strikeout"),
       BB = sum(KorBB == "Walk"),
       HBP = sum(PitchCall == "HitByPitch"),
-      AB = sum((PitchCall %in% c("InPlay") | KorBB %in% c("Strikeout")) & !KorBB %in% c("Walk", "HitbyPitch") & !PlayResult %in% c("Sacrifice")),
+      AB = sum((PitchCall %in% c("InPlay") | KorBB %in% c("Strikeout")) & !PitchCall %in% c("HitByPitch") & !KorBB %in% c("Walk") & !PlayResult %in% c("Sacrifice")),
       H = sum(PlayResult %in% c("Single", "Double", "Triple", "HomeRun")),
       X1B = sum(PlayResult == "Single"),
       X2B = sum(PlayResult == "Double"),
       X3B = sum(PlayResult == "Triple"),
       HR = sum(PlayResult == "HomeRun"),
-      AvgExitVelocity = round(mean(ExitSpeed[PitchCall == "InPlay"], na.rm = TRUE), 1),
+      `HardHit%` = round(sum(HardHitCheck, na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
       ZWhiffs = sum(PitchCall == "StrikeSwinging" & InStrikeZone, na.rm = TRUE)
     ) %>%
     mutate(
@@ -260,7 +261,7 @@ for (pitcher in pitchers) {
       BAA = round(H / AB, 3),
       `Pitch%` = round(Pitches / total_pitches * 100, 1)
     ) %>%
-    select(TaggedPitchType, Pitches, `Pitch%`, `Swing%`, `Whiff%`, `Chase%`, `Strike%`, `GroundBall%`, `FlyBall%`, `Zone%`, `ZWhiff%`, `ZSwing%`, AvgExitVelocity, BAA) %>%
+    select(TaggedPitchType, Pitches, `Pitch%`, `Swing%`, `Whiff%`, `Chase%`, `Strike%`,  `Zone%`, `ZWhiff%`, `ZSwing%`, `GroundBall%`, `FlyBall%`, `HardHit%`, BAA) %>%
     arrange(desc(Pitches))
   
   # Calculate "All" row
@@ -278,11 +279,12 @@ for (pitcher in pitchers) {
       InStrikeZone = sum(InStrikeZone),
       ZSwingCount = sum(ZSwing),
       ZWhiffs = sum(PitchCall == "StrikeSwinging" & InStrikeZone, na.rm = TRUE),
-      AB = sum((PitchCall %in% c("InPlay") | KorBB %in% c("Strikeout")) & !KorBB %in% c("Walk", "HitbyPitch") & !PlayResult %in% c("Sacrifice")),
+      AB = sum((PitchCall %in% c("InPlay") | KorBB %in% c("Strikeout")) & !PitchCall %in% c("HitByPitch") & !KorBB %in% c("Walk") & !PlayResult %in% c("Sacrifice")),
+      H = sum(PlayResult %in% c("Single", "Double", "Triple", "HomeRun")),
       SO = sum(KorBB == "Strikeout"),
       BB = sum(KorBB == "Walk"),
       H = sum(PlayResult %in% c("Single", "Double", "Triple", "HomeRun")),
-      AvgExitVelocity = round(mean(ExitSpeed[PitchCall == "InPlay"], na.rm = TRUE), 1)
+      `HardHit%` = round(sum(HardHitCheck, na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1)
     ) %>%
     mutate(
       `Pitch%` = 100,
@@ -297,7 +299,7 @@ for (pitcher in pitchers) {
       `ZSwing%` = round(ifelse(InStrikeZone > 0, ZSwingCount / InStrikeZone * 100, 0), 1),
       BAA = round(H / AB, 3)
     ) %>%
-    select(TaggedPitchType, Pitches, `Pitch%`, `Swing%`, `Whiff%`, `Chase%`, `Strike%`, `GroundBall%`, `FlyBall%`, `Zone%`, `ZWhiff%`, `ZSwing%`, AvgExitVelocity, BAA)
+    select(TaggedPitchType, Pitches, `Pitch%`, `Swing%`, `Whiff%`, `Chase%`, `Strike%`, `Zone%`, `ZWhiff%`, `ZSwing%`, `GroundBall%`, `FlyBall%`, `HardHit%`, BAA)
   
   statistics <- bind_rows(statistics, all_row)
   
@@ -327,39 +329,97 @@ for (pitcher in pitchers) {
   )
   
   
-  # Calculate Statistics
   calculateStatistics <- function(data_filtered) {
+    
+    # Define InStrikeZone, Swing, Chase
     data_filtered <- data_filtered %>%
       mutate(
-        InStrikeZone = PlateLocSide >= -1 & PlateLocSide <= 1 & PlateLocHeight >= 1.40 & PlateLocHeight <= 3.6,
-        Swing = PitchCall %in% c("FoulBallNotFieldable", "FoulBallFieldable", "StrikeSwinging", "InPlay"),
-        Chase = ifelse(InStrikeZone == 0 & Swing == 1, 1, 0)
+        InStrikeZone = PlateLocSide >= -1 & PlateLocSide <= 1 & 
+          PlateLocHeight >= 1.40 & PlateLocHeight <= 3.6,
+        Swing = PitchCall %in% c("FoulBallNotFieldable", "FoulBallFieldable", 
+                                 "StrikeSwinging", "InPlay"),
+        Chase = ifelse(!InStrikeZone & Swing, 1, 0)  # Cleaner logical check
       )
     
+    # First pitch strike %
     first_pitch_strikes <- data_filtered %>%
-      filter(PitchofPA == 1 & PitchCall %in% c("FoulBallNotFieldable", "FoulBallFieldable", "InPlay", "StrikeCalled", "StrikeSwinging"))
+      filter(PitchofPA == 1 & 
+               PitchCall %in% c("FoulBallNotFieldable", "FoulBallFieldable", 
+                                "InPlay", "StrikeCalled", "StrikeSwinging"))
     
-    first_pitch_strikes_count <- nrow(first_pitch_strikes)
-    first_pitch_strike_percentage <- round(first_pitch_strikes_count / nrow(data_filtered %>% filter(PitchofPA == 1)) * 100, 1)
+    first_pitch_strike_percentage <- round(
+      nrow(first_pitch_strikes) / 
+        nrow(data_filtered %>% filter(PitchofPA == 1)) * 100, 1
+    )
     
-    earned_runs <- sum((data_filtered %>% filter(PlayResult != "Error"))$RunsScored, na.rm = TRUE)
+    # Identify whether an error occurred in each inning BEFORE two-out runs scored
+    earned_run_data <- data_filtered %>%
+      group_by(GameID, Inning) %>%
+      mutate(
+        ErrorOccurred = any(PlayResult == "Error"),
+        RunWithTwoOuts = RunsScored > 0 & Outs == 2,
+        UnearnedFlag = ErrorOccurred & RunWithTwoOuts
+      ) %>%
+      ungroup()
     
+    # Now calculate Earned Runs (ER)
+    ER <- earned_run_data %>%
+      filter(RunsScored > 0) %>%
+      filter(!UnearnedFlag) %>%  # Remove runs flagged as unearned
+      summarise(EarnedRuns = sum(RunsScored, na.rm = TRUE)) %>%
+      pull(EarnedRuns)
+    
+    
+    # Create a new column to identify the start of each at-bat
+    data_filtered <- data_filtered %>%
+      group_by(Pitcher, Batter) %>%
+      mutate(
+        AtBatID = cumsum(PitchofPA == 1)  # Create an ID for each at-bat
+      ) %>%
+      ungroup()
+    
+    # --- 2/3 Outcome Calculation ---
+    two_thirds_data <- data_filtered %>%
+      group_by(Pitcher, Batter, AtBatID) %>%
+      summarise(
+        StrikeCount = sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "FoulBallNotFieldable") & PitchofPA <= 3, na.rm = TRUE),
+        OutRecorded = sum(PlayResult == "Out" & PitchofPA <= 3, na.rm = TRUE),
+        TwoStrikesOrOut = ifelse(StrikeCount >= 2 | OutRecorded >= 1, 1, 0),
+        .groups = 'drop'
+      ) %>%
+      summarise(
+        TotalAtBats = n(),
+        SuccessfulOutcomes = sum(TwoStrikesOrOut),
+        `2/3%` = round(SuccessfulOutcomes / TotalAtBats * 100, 1),
+        .groups = 'drop'
+      )
+    
+    # --- Main Statistics Summary ---
     statistics <- data_filtered %>%
       summarise(
         Pitches = n(),
-        PA = sum(PitchCall %in% c("InPlay") | KorBB %in% c("Strikeout", "Walk", "HitbyPitch")),
-        AB = sum((PitchCall %in% c("InPlay") | KorBB %in% c("Strikeout")) & !KorBB %in% c("Walk", "HitbyPitch") & !PlayResult %in% c("Sacrifice")),
-        IP = round(sum((OutsOnPlay == "1" | KorBB == "Strikeout")) / 3, 2),
+        PA = sum(PitchCall %in% c("InPlay","HitByPitch") | KorBB %in% c("Strikeout", "Walk")),
+        AB = sum((PitchCall %in% c("InPlay") | KorBB == "Strikeout") & 
+                   !KorBB %in% c("Walk") & 
+                   !PitchCall %in% c("HitByPitch") & 
+                   !PlayResult %in% c("Sacrifice")),
+        IP = round(sum((OutsOnPlay == "1" | KorBB == "Strikeout"| OutsOnPlay == ("2"))) / 3, 2),
         H = sum(PlayResult %in% c("Single", "Double", "Triple", "HomeRun")),
         SO = sum(KorBB == "Strikeout"),
         BB = sum(KorBB == "Walk"),
         HBP = sum(PitchCall == "HitByPitch"),
-        `Whiff%` = round(sum(PitchCall == "StrikeSwinging", na.rm = TRUE) / sum(Swing, na.rm = TRUE) * 100, 1),
-        `Chase%` = round(sum(Chase, na.rm = TRUE) / sum(Swing, na.rm = TRUE) * 100, 1),
-        `Strike%` = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "FoulBallNotFieldable", "FoulBallFieldable", "InPlay")) / Pitches * 100, 2),
+        #ERA = round((ER / IP) * 9, 2),
+        WHIP = round((BB + sum(PlayResult %in% c("Single", "Double", "Triple", "HomeRun"))) / IP, 2),
+        `K/BB` = round(SO / BB, 2),
+        BAA = round(H / AB, 3),
         `FPS%` = first_pitch_strike_percentage,
-        BAA = round(H / AB, 3)
+        `K%` = round((SO / PA) * 100, 1),
+        `BB%` = round((BB / PA) * 100, 1)
       )
+    
+    # Add 2/3% to final summary
+    statistics <- statistics %>%
+      mutate(`2/3%` = two_thirds_data$`2/3%`)
     
     return(statistics)
   }
@@ -504,7 +564,8 @@ for (pitcher in pitchers) {
       arrangeGrob(
         movement_chart + theme(plot.margin = unit(c(1, 1, 1, 1), "cm")),
         release_chart + theme(plot.margin = unit(c(1, 1, 1, 1), "cm")),
-        ncol = 2
+        ncol = 2,
+        widths = c(3, 3)
       ),
       arrangeGrob(
         pitch_location_map_left + theme(plot.margin = unit(c(1, 1, 1, 1), "cm")),
@@ -514,14 +575,14 @@ for (pitcher in pitchers) {
       combined_hit_and_strike_chart
     ),
     nrow = 5,
-    heights = c(0.3, 1.2, 1.1, 1.2, 1.2)
+    heights = c(0.3, 1.2, 1.4, 1.2, 1.2)
   )
   
   
   
   # Save report
   pdf_filename <- paste0(formatted_name, " Pitching Report.pdf")
-  pdf(pdf_filename, width = 10, height = 18, family = "Helvetica")
+  pdf(pdf_filename, width = 10, height = 19, family = "Helvetica")
   grid.draw(report_layout)
   dev.off()
   
