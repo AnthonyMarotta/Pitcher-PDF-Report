@@ -256,12 +256,12 @@ for (pitcher in pitchers) {
       `GroundBall%` = round(GroundBall / TotalBallsInPlay * 100, 1),
       `FlyBall%` = round(FlyBall / TotalBallsInPlay * 100, 1),
       `Zone%` = round(ifelse(Pitches > 0, InStrikeZone / Pitches * 100, 0), 1),
-      `ZWhiff%` = round(ifelse(ZSwingCount > 0, ZWhiffs / ZSwingCount * 100, 0), 1),
+      `Zone Whiff%` = round(ifelse(ZSwingCount > 0, ZWhiffs / ZSwingCount * 100, 0), 1),
       `ZSwing%` = round(ifelse(InStrikeZone > 0, ZSwingCount / InStrikeZone * 100, 0), 1),
       BAA = round(H / AB, 3),
       `Pitch%` = round(Pitches / total_pitches * 100, 1)
     ) %>%
-    select(TaggedPitchType, Pitches, `Pitch%`, `Swing%`, `Whiff%`, `Chase%`, `Strike%`,  `Zone%`, `ZWhiff%`, `ZSwing%`, `GroundBall%`, `FlyBall%`, `HardHit%`, BAA) %>%
+    select(TaggedPitchType, Pitches, `Pitch%`, `Swing%`, `Whiff%`, `Zone Whiff%`, `Chase%`, `Strike%`,  `Zone%`, `GroundBall%`, `FlyBall%`, `HardHit%`, BAA) %>%
     arrange(desc(Pitches))
   
   # Calculate "All" row
@@ -295,11 +295,11 @@ for (pitcher in pitchers) {
       `GroundBall%` = round(GroundBall / TotalBallsInPlay * 100, 1),
       `FlyBall%` = round(FlyBall / TotalBallsInPlay * 100, 1),
       `Zone%` = round(ifelse(Pitches > 0, InStrikeZone / Pitches * 100, 0), 1),
-      `ZWhiff%` = round(ifelse(ZSwingCount > 0, ZWhiffs / ZSwingCount * 100, 0), 1),
+      `Zone Whiff%` = round(ifelse(ZSwingCount > 0, ZWhiffs / ZSwingCount * 100, 0), 1),
       `ZSwing%` = round(ifelse(InStrikeZone > 0, ZSwingCount / InStrikeZone * 100, 0), 1),
       BAA = round(H / AB, 3)
     ) %>%
-    select(TaggedPitchType, Pitches, `Pitch%`, `Swing%`, `Whiff%`, `Chase%`, `Strike%`, `Zone%`, `ZWhiff%`, `ZSwing%`, `GroundBall%`, `FlyBall%`, `HardHit%`, BAA)
+    select(TaggedPitchType, Pitches, `Pitch%`, `Swing%`, `Whiff%`, `Zone Whiff%`, `Chase%`, `Strike%`, `Zone%`, `GroundBall%`, `FlyBall%`, `HardHit%`, BAA)
   
   statistics <- bind_rows(statistics, all_row)
   
@@ -405,13 +405,17 @@ for (pitcher in pitchers) {
                    !PlayResult %in% c("Sacrifice")),
         IP = round(sum((OutsOnPlay == "1" | KorBB == "Strikeout"| OutsOnPlay == ("2"))) / 3, 2),
         H = sum(PlayResult %in% c("Single", "Double", "Triple", "HomeRun")),
+        `1B` = sum(PlayResult == "Single"),
+        `2B` = sum(PlayResult == "Double"),
+        `3B` = sum(PlayResult == "Triple"),
+        HR = sum(PlayResult == "HomeRun"),
         SO = sum(KorBB == "Strikeout"),
         BB = sum(KorBB == "Walk"),
         HBP = sum(PitchCall == "HitByPitch"),
         #ERA = round((ER / IP) * 9, 2),
+        BAA = round(H / AB, 3),
         WHIP = round((BB + sum(PlayResult %in% c("Single", "Double", "Triple", "HomeRun"))) / IP, 2),
         `K/BB` = round(SO / BB, 2),
-        BAA = round(H / AB, 3),
         `FPS%` = first_pitch_strike_percentage,
         `K%` = round((SO / PA) * 100, 1),
         `BB%` = round((BB / PA) * 100, 1)
