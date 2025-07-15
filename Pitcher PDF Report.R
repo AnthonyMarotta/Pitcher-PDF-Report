@@ -180,7 +180,8 @@ for (pitcher in pitchers) {
       `Rel Side` = round(mean(RelSide, na.rm = TRUE), 1),
       `Ext` = round(mean(Extension, na.rm = TRUE), 1)
     )%>%
-    arrange(desc(Pitches))
+    arrange(desc(Pitches)) %>%
+    rename(`Pitch Type` = TaggedPitchType)
   
   # Title to the Pitch Metrics Table
   pitch_metrics_title <- textGrob(
@@ -262,7 +263,7 @@ for (pitcher in pitchers) {
       `Pitch%` = round(Pitches / total_pitches * 100, 1)
     ) %>%
     select(TaggedPitchType, Pitches, `Pitch%`, `Swing%`, `Whiff%`, `Zone Whiff%`, `Chase%`, `Strike%`,  `Zone%`, `GroundBall%`, `FlyBall%`, `HardHit%`, BAA) %>%
-    arrange(desc(Pitches))
+    arrange(desc(Pitches)) 
   
   # Calculate "All" row
   all_row <- data_filtered %>%
@@ -301,7 +302,8 @@ for (pitcher in pitchers) {
     ) %>%
     select(TaggedPitchType, Pitches, `Pitch%`, `Swing%`, `Whiff%`, `Zone Whiff%`, `Chase%`, `Strike%`, `Zone%`, `GroundBall%`, `FlyBall%`, `HardHit%`, BAA)
   
-  statistics <- bind_rows(statistics, all_row)
+  statistics <- bind_rows(statistics, all_row) %>%
+    rename(`Pitch Type` = TaggedPitchType)
   
   # Add a title to the Pitch Performance Table
   performance_title <- textGrob(
